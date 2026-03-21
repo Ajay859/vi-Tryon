@@ -18,4 +18,51 @@ model User{
   name            String
   email           String         @unique
   password        String
+  
+  image           String?
+
+  posts           Post[]
+  comments        Comment[]
+  likes           Like[]
+
+  createdAt       DateTime     @default(now())
+}
+
+model Post{
+  id            String        @id @default(cuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id])
+
+  originalImg   String
+  coltheImg     String
+  resultImg     String
+
+  caption       String
+  isPublic      Boolean       @default(true)
+
+  likes         Like[]
+  comments      Comment[]
+  createdAt     DateTime      @default(now())
+}
+
+model  Like{
+  id            String         @id @default(cuid())
+  userId        String
+  postId        String
+
+  user          User          @relation(fields: [userId], references: [id])
+  post          Post          @relation(fields: [postId], references: [id])
+
+  @@unique([postId,userId])
+}
+
+model Comment{
+id              String         @id @default(cuid())
+userId          String
+postId          String
+
+user            User           @relation(fields: [userId],references: [id])
+post            Post           @relation(fields: [postId],references: [id])
+
+createdAt       DateTime       @default(now())
 }
