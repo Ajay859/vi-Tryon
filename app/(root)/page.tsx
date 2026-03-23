@@ -1,6 +1,12 @@
+import Navbar from "@/components/navbar";
 
-export default function HomePage(){
+export default function HomePage() {
   return (
-    <div>home</div>
-  )
+    <div>
+      {/* navbar */}
+
+      <Navbar />
+      {/* hero section  */}
+    </div>
+  );
 }
