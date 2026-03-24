@@ -1,27 +1,27 @@
-import z, { file } from "zod";
+import { z } from "zod";
 
-export const imageSchema = z.object({
-  userPhoto: z
-    .instanceof(File)
-    .refine((file) => file.size > 0, { message: " image is required " })
-    .refine((file) => file.size <= 5 * 1024 * 1024, {
-      message: "image size should be less than 5mb",
-    })
-    .refine(
-      (file) => ["image/jpg", "image/png", "image/webp"].includes(file.type),
-      { message: "only jpg,png or webp formate is allowed" },
-    ),
+const imageFileSchema = z
+  .instanceof(File, { message: "File required hai" })
+  .refine((file) => file.size > 0, { message: "File khali nahi ho sakti" })
+  .refine((file) => file.size <= 5 * 1024 * 1024, {
+    message: "Image size 5MB se zyada nahi honi chahiye",
+  })
+  .refine(
+    (file) => ["image/jpeg", "image/png", "image/webp"].includes(file.type),
+    { message: "Sirf JPG, PNG ya WebP format allowed hai" },
+  );
 
-  colthPhoto: z
-    .instanceof(File)
-    .refine((file) => file.size > 0, { message: " image is required " })
-    .refine((file) => file.size <= 5 * 1024 * 1024, {
-      message: "image size should be less than 5mb",
-    })
-    .refine(
-      (file) => ["image/jpg", "image/png", "image/webp"].includes(file.type),
-      { message: "only jpg,png or webp formate is allowed" },
-    ),
-});
+export const tryOnRequestSchema = z
+  .object({
+    usePreviousUserPhoto: z.boolean().default(false),
 
+    userPhoto: imageFileSchema.optional(),
 
+    clothPhoto: imageFileSchema,
+  })
+  .refine((data) => data.usePreviousUserPhoto || data.userPhoto, {
+    message: "Either use your previous photo or upload a new user photo",
+    path: ["userPhoto"],
+  });
+
+export type TryOnRequest = z.infer<typeof tryOnRequestSchema>;
