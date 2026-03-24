@@ -14,21 +14,26 @@ datasource db {
 
 
 model User{
-  id              String        @id @default(cuid())
-  name            String?
-  email           String        @unique
-  password        String?
+  id                    String        @id @default(cuid())
+  name                  String?
+  email                 String        @unique
+  password              String?
   
-  image           String?
+  image                 String?
 
-  posts           Post[]
-  comments        Comment[]
-  likes           Like[]
+  userPhotourl          String?
+  userPhotoUpdatedat    DateTime?
 
-  accounts        Account[]
-  sessions        Session[]
+  tryonHistory         tryOnHistory[]
 
-  createdAt       DateTime     @default(now())
+  posts                 Post[]
+  comments              Comment[]
+  likes                 Like[]
+
+  accounts              Account[]
+  sessions              Session[]
+
+  createdAt             DateTime     @default(now())
 }
 
 model Post{
@@ -89,6 +94,20 @@ model Account {
  
   @@unique([provider, providerAccountId])
   @@map("accounts")
+}
+
+model tryOnHistory{
+  id                  String        @id @default(cuid())
+  userId              String 
+  user                User         @relation(fields: [userId],references: [id])
+
+
+  userPhotoUrl        String?
+  clothUrl            String?
+  resultUrl           String
+
+  createdAt           DateTime    @default(now())
+  @@index([userId])
 }
  
 model Session {
