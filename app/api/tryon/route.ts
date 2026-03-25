@@ -85,6 +85,18 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    if (!userPhotoToUse) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "user photo is required ",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
     if (!clothPhotoFile) {
       return NextResponse.json(
         {
@@ -107,12 +119,12 @@ export async function POST(req: NextRequest) {
       model: "gemini-2.5-flash",
     });
 
-    const parts: any[] = [{ text: prompt }];
+    const parts: GeminiPart[] = [{ text: prompt }];
 
     if (useBuffer) {
       parts.push({
         inlineData: {
-          mimeType: userPhotoToUse?.type,
+          mimeType: userPhotoToUse.type,
           data: useBuffer.toString("base64"),
         },
       });
@@ -125,7 +137,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const result = await model.generateContent(parts);
+    const result = await model.generateContent(parts as any);
 
     const candidate = result.response.candidates?.[0];
 
@@ -143,12 +155,12 @@ export async function POST(req: NextRequest) {
     }
     const generatedImage = imagePart.inlineData.data;
 
-    // 🎯 8. Final response
+    // Final response
     return NextResponse.json({
       success: true,
       resultImage: `data:image/jpeg;base64,${generatedImage}`,
       suggestions: textPart?.text || "",
-      message: "Try-on ready ✨",
+      message: "Try-on ready ",
     });
   } catch (error: any) {
     console.error("Try-on API Error:", error);
