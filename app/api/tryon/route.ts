@@ -4,6 +4,7 @@ import { prompt } from "@/lib/prompt";
 import { tryOnRequestSchema } from "@/lib/validation/tryonSchema";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 
 const GenAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 type GeminiPart = {
@@ -29,14 +30,14 @@ export async function POST(req: NextRequest) {
 
     const formData = await req.formData();
 
-    const useUserPreviousPhoto =
-      formData.get("useUserPreviousPhoto") === "true";
+    const usePreviousUserPhoto =
+      formData.get("usePreviousUserPhoto") === "true";
 
     const userPhotoFile = formData.get("userPhoto") as File | null;
-    const clothPhotoFile = formData.get("colthPhoto") as File | null;
+    const clothPhotoFile = formData.get("clothPhoto") as File | null;
 
     const validation = tryOnRequestSchema.safeParse({
-      useUserPreviousPhoto,
+      usePreviousUserPhoto,
       userPhoto: userPhotoFile || undefined,
       clothPhoto: clothPhotoFile,
     });
@@ -57,7 +58,7 @@ export async function POST(req: NextRequest) {
       );
     }
     let userPhotoToUse = userPhotoFile;
-    if (useUserPreviousPhoto) {
+    if (usePreviousUserPhoto) {
       const userData = await prisma.user.findUnique({
         where: { id: session.user.id },
         select: {
@@ -162,13 +163,32 @@ export async function POST(req: NextRequest) {
       suggestions: textPart?.text || "",
       message: "Try-on ready ",
     });
-  } catch (error: any) {
-    console.error("Try-on API Error:", error);
+  } catch (error: unknown) {
+    if (error instanceof z.ZodError) {
+      const formattedErrors = error.issues.map((issue) => ({
+        field: issue.path.join("."),
+        message: issue.message,
+      }));
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Validation error",
+          details: formattedErrors,
+        },
+        { status: 400 },
+      );
+    }
+
+    console.error("Server error:", error);
+
+    const message =
+      error instanceof Error ? error.message : "Internal server error";
 
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Server error occurred",
+        error: message,
       },
       { status: 500 },
     );
