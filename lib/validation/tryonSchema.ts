@@ -1,4 +1,4 @@
-import { z } from "zod"
+import { z } from "zod";
 
 const isFile = (file: unknown): file is File => {
   return (
@@ -6,8 +6,8 @@ const isFile = (file: unknown): file is File => {
     file !== null &&
     "size" in file &&
     "type" in file
-  )
-}
+  );
+};
 
 const imageFileSchema = z
   .custom<File>((file) => isFile(file), {
@@ -20,16 +20,15 @@ const imageFileSchema = z
     message: "Image must be less than 5MB",
   })
   .refine(
-    (file) =>
-      ["image/jpeg", "image/png", "image/webp"].includes(file.type),
+    (file) => ["image/jpeg", "image/png", "image/webp"].includes(file.type),
     {
       message: "Only JPG, PNG, or WebP images are allowed",
-    }
-  )
+    },
+  );
 
 export const tryOnRequestSchema = z
   .object({
-    usePreviousUserPhoto: z.boolean().default(false),
+    usePreviousUserPhoto: z.boolean(),
 
     userPhoto: imageFileSchema.optional(),
 
@@ -41,10 +40,9 @@ export const tryOnRequestSchema = z
       (data.usePreviousUserPhoto && !data.userPhoto) ||
       (!data.usePreviousUserPhoto && data.userPhoto),
     {
-      message:
-        "Either use your previous photo OR upload a new one (not both)",
+      message: "Either use your previous photo OR upload a new one (not both)",
       path: ["userPhoto"],
-    }
-  )
+    },
+  );
 
-export type TryOnRequest = z.infer<typeof tryOnRequestSchema>
+export type TryOnRequest = z.infer<typeof tryOnRequestSchema>;

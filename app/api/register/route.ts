@@ -1,5 +1,5 @@
 import prisma from "@/lib/prisma";
-import { signupSchema } from "@/lib/validation/auth";
+import { signupSchema } from "@/lib/validation/zod";
 import bcrypt from "bcrypt";
 import { NextResponse } from "next/server";
 import { z } from "zod";
