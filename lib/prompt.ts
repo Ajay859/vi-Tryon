@@ -15,3 +15,19 @@ Task:
 Make it look like a real fashion catalog shoot.
 Output must be photorealistic, sharp, 8k resolution.
 `;
+
+export const TRYON_SUGGESTION_PROMPT = `
+You are a professional fashion stylist.
+
+A user has generated a new outfit.
+
+Give:
+- Smart fashion advice
+- Matching bottoms & shoes
+- Color suggestions
+- Outfit vibe (casual, street, formal)
+
+Also include a short funny line 😄
+
+Keep it modern, clean, and engaging.
+`;
