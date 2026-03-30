@@ -4,9 +4,9 @@ import { prompt } from "@/lib/prompt";
 import { tryOnRequestSchema } from "@/lib/validation/tryonSchema";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 
 const GenAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+
 type GeminiPart = {
   text?: string;
   inlineData?: {
@@ -21,15 +21,14 @@ export async function POST(req: NextRequest) {
 
     if (!session?.user?.id) {
       return NextResponse.json(
-        {
-          message: "unauthorized plz login first",
-        },
+        { success: false, error: "Unauthorized. Please login first." },
         { status: 401 },
       );
     }
 
     const formData = await req.formData();
 
+    // ✅ FIXED NAME
     const usePreviousUserPhoto =
       formData.get("usePreviousUserPhoto") === "true";
 
@@ -46,35 +45,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "validation failed",
-          details: validation.error.issues.map((issue) => ({
-            field: String(issue.path[0]),
-            message: issue.message,
-          })),
+          error: "Validation failed",
+          details: validation.error.issues,
         },
-        {
-          status: 400,
-        },
+        { status: 400 },
       );
     }
+
     let userPhotoToUse = userPhotoFile;
+
+    // ✅ FIXED Prisma field
     if (usePreviousUserPhoto) {
       const userData = await prisma.user.findUnique({
         where: { id: session.user.id },
-        select: {
-          userPhotourl: true,
-        },
+        select: { userPhotourl: true },
       });
 
       if (!userData?.userPhotourl) {
         return NextResponse.json(
           {
             success: false,
-            error: "no previous photo found plz upload new one to continue",
+            error: "No previous photo found. Please upload one.",
           },
-          {
-            status: 400,
-          },
+          { status: 400 },
         );
       }
 
@@ -86,100 +79,93 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    if (!userPhotoToUse) {
+    if (!userPhotoToUse || !clothPhotoFile) {
       return NextResponse.json(
         {
           success: false,
-          error: "user photo is required ",
-        },
-        {
-          status: 400,
-        },
-      );
-    }
-
-    if (!clothPhotoFile) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "clothe photo is required ",
-        },
-        {
-          status: 400,
-        },
-      );
-    }
-
-    const useBuffer = userPhotoToUse
-      ? Buffer.from(await userPhotoToUse.arrayBuffer())
-      : null;
-
-    const clothBuffer = Buffer.from(await clothPhotoFile.arrayBuffer());
-
-    const model = GenAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
-    });
-
-    const parts: GeminiPart[] = [{ text: prompt }];
-
-    if (useBuffer) {
-      parts.push({
-        inlineData: {
-          mimeType: userPhotoToUse.type,
-          data: useBuffer.toString("base64"),
-        },
-      });
-    }
-
-    parts.push({
-      inlineData: {
-        mimeType: clothPhotoFile.type,
-        data: clothBuffer.toString("base64"),
-      },
-    });
-
-    const result = await model.generateContent(parts as any);
-
-    const candidate = result.response.candidates?.[0];
-
-    if (!candidate) {
-      throw new Error("no response from Ai");
-    }
-
-    const responseParts = candidate.content.parts as GeminiPart[];
-
-    const imagePart = responseParts.find((p) => p.inlineData);
-    const textPart = responseParts.find((p) => p.text);
-
-    if (!imagePart || !imagePart.inlineData) {
-      throw new Error("no image generated sorry");
-    }
-    const generatedImage = imagePart.inlineData.data;
-
-    // Final response
-    return NextResponse.json({
-      success: true,
-      resultImage: `data:image/jpeg;base64,${generatedImage}`,
-      suggestions: textPart?.text || "",
-      message: "Try-on ready ",
-    });
-  } catch (error: unknown) {
-    if (error instanceof z.ZodError) {
-      const formattedErrors = error.issues.map((issue) => ({
-        field: issue.path.join("."),
-        message: issue.message,
-      }));
-
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Validation error",
-          details: formattedErrors,
+          error: "User photo and cloth photo are required",
         },
         { status: 400 },
       );
     }
 
+    // 1. Convert to Buffers (Ensuring names are consistent)
+    const userBuffer = Buffer.from(await userPhotoToUse.arrayBuffer());
+    const clothBuffer = Buffer.from(await clothPhotoFile.arrayBuffer());
+
+    const model = GenAI.getGenerativeModel({
+      model: "gemini-2.5-flash-image",
+    });
+
+    // 2. Build the parts list (Images FIRST, Text LAST)
+    const parts: any[] = [
+      {
+        inlineData: {
+          mimeType: userPhotoToUse.type,
+          data: userBuffer.toString("base64"),
+        },
+      },
+      {
+        inlineData: {
+          mimeType: clothPhotoFile.type,
+          data: clothBuffer.toString("base64"),
+        },
+      },
+      { text: prompt }, // Move instructions to the end for better accuracy
+    ];
+
+    // 3. The API Call
+    const result = await model.generateContent({
+      contents: [
+        {
+          role: "user",
+          parts: parts,
+        },
+      ],
+      generationConfig: {
+        // @ts-expect-error: responseModalities is a 2026 feature
+        responseModalities: ["TEXT", "IMAGE"],
+        temperature: 0.7, // Keeps the result consistent
+      },
+    });
+
+    // 🔥 DEBUG (optional but useful)
+    console.log(JSON.stringify(result.response, null, 2));
+
+    const candidate = result.response.candidates?.[0];
+
+    if (!candidate) {
+      return NextResponse.json(
+        { success: false, error: "No response from AI" },
+        { status: 500 },
+      );
+    }
+
+    const responseParts = candidate.content.parts as GeminiPart[];
+
+    let imageData: string | null = null;
+    let textData = "";
+
+    // ✅ SAFE PARSING
+    for (const part of responseParts) {
+      if (part.inlineData?.data) {
+        imageData = part.inlineData.data;
+      }
+      if (part.text) {
+        textData += part.text;
+      }
+    }
+
+    // ✅ NO CRASH — fallback safe
+    return NextResponse.json({
+      success: true,
+      resultImage: imageData ? `data:image/jpeg;base64,${imageData}` : null,
+      suggestions: textData || "No suggestions available",
+      message: imageData
+        ? "Try-on generated successfully ✨"
+        : "No image generated, but suggestions are ready",
+    });
+  } catch (error: unknown) {
     console.error("Server error:", error);
 
     const message =

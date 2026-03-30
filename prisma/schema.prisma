@@ -26,9 +26,7 @@ model User{
 
   tryonHistory         tryOnHistory[]
 
-  posts                 Post[]
-  comments              Comment[]
-  likes                 Like[]
+
 
   accounts              Account[]
   sessions              Session[]
@@ -36,45 +34,7 @@ model User{
   createdAt             DateTime     @default(now())
 }
 
-model Post{
-  id            String        @id @default(cuid())
-  userId        String
-  user          User          @relation(fields: [userId], references: [id])
 
-  originalImg   String
-  colthImg     String
-  resultImg     String
-
-  caption       String
-  isPublic      Boolean       @default(true)
-
-  likes         Like[]
-  comments      Comment[]
-  createdAt     DateTime      @default(now())
-}
-
-model  Like{
-  id            String         @id @default(cuid())
-  userId        String
-  postId        String
-
-  user          User          @relation(fields: [userId], references: [id])
-  post          Post          @relation(fields: [postId], references: [id])
-
-  @@unique([postId,userId])
-}
-
-model Comment{
-  id              String         @id @default(cuid())
-  text            String
-  userId          String
-  postId          String
-
-  user            User           @relation(fields: [userId],references: [id])
-  post            Post           @relation(fields: [postId],references: [id])
-
-  createdAt       DateTime       @default(now())
-}
 
 model Account {
   id                 String  @id @default(cuid())
