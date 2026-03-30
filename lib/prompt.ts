@@ -1,21 +1,17 @@
 export const prompt = `
-You are a professional fashion stylist and virtual try-on expert.
+Professional virtual clothing try-on photography.
 
-The user has uploaded their full body photo and a clothing item.
+Reference 1: A full-body photo of a real person with specific face, body type, pose, skin tone and hair.
+Reference 2: A clothing item (t-shirt, shirt, hoodie, etc.).
 
-Tasks:
-1. Put the clothing item on the user realistically with natural fit and draping.
-2. Create ONE high-quality try-on image.
+Task:
+- Place the exact clothing from Reference 2 onto the person from Reference 1.
+- Preserve the person's exact face, identity, pose, body proportions and skin tone.
+- Render the clothing with realistic fabric behavior, natural folds, wrinkles, stretching and fit according to body shape.
+- Use realistic lighting, soft shadows and professional studio photography style.
+- High detail on cloth texture, buttons, seams and material.
+- Clean minimal background, focus entirely on the outfit.
 
-3. Give smart fashion recommendations:
-   - Best matching bottoms
-   - Best matching shoes
-   - Color combinations
-   - Outfit vibe
-
-Style: Friendly and helpful.
-
-Return:
-1. Generated image
-2. Text recommendations
+Make it look like a real fashion catalog shoot.
+Output must be photorealistic, sharp, 8k resolution.
 `;
