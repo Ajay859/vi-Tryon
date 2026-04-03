@@ -1,6 +1,5 @@
 import { tryOnRequestSchema } from "@/lib/validation/tryonSchema";
-import { prompt, TRYON_SUGGESTION_PROMPT } from "@/lib/prompt";
-
+import { TRYON_SUGGESTION_PROMPT } from "@/lib/prompt";
 import { NextRequest, NextResponse } from "next/server";
 import Replicate from "replicate";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -10,6 +9,8 @@ const replicate = new Replicate({
 });
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+
+export const maxDuration = 120;
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,6 +22,7 @@ export async function POST(req: NextRequest) {
     const userPhoto = formData.get("userPhoto") as File | null;
     const clothPhoto = formData.get("clothPhoto") as File | null;
 
+    //  Validation
     const validation = tryOnRequestSchema.safeParse({
       usePreviousUserPhoto,
       userPhoto,
@@ -41,74 +43,109 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!userPhoto || !clothPhoto) {
+    //  Required checks
+    if (!clothPhoto) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "Both photos are required",
-        },
+        { success: false, error: "Cloth photo is required" },
         { status: 400 },
       );
     }
 
-    const userBuffer = Buffer.from(await userPhoto.arrayBuffer());
-    const clothBuffer = Buffer.from(await clothPhoto.arrayBuffer());
+    if (!usePreviousUserPhoto && !userPhoto) {
+      return NextResponse.json(
+        { success: false, error: "User photo is required" },
+        { status: 400 },
+      );
+    }
 
-    const userBase64 = `data:${userPhoto.type};base64,${userBuffer.toString(
-      "base64",
-    )}`;
+    // Convert cloth image → base64
+    const clothBuffer = Buffer.from(await clothPhoto.arrayBuffer());
     const clothBase64 = `data:${clothPhoto.type};base64,${clothBuffer.toString(
       "base64",
     )}`;
 
-    console.log(" Calling Flux-2-Pro...");
+    let userBase64: string;
 
-    const stream = await replicate.run("black-forest-labs/flux-2-pro", {
-      input: {
-        prompt: prompt,
-        image: userBase64,
-        image2: clothBase64,
-        width: 1024,
-        height: 1536,
-        num_outputs: 1,
-        guidance_scale: 7.5,
-        num_inference_steps: 28,
-        strength: 0.8,
+    if (usePreviousUserPhoto) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Previous photo retrieval not yet implemented",
+        },
+        { status: 501 },
+      );
+    } else {
+      const userBuffer = Buffer.from(await userPhoto!.arrayBuffer());
+      userBase64 = `data:${userPhoto!.type};base64,${userBuffer.toString(
+        "base64",
+      )}`;
+    }
+
+    //  CALLVTON MODEL
+    console.log("Calling flux-vton...");
+
+    const output = await replicate.run(
+      "subhash25rawat/flux-vton:a02643ce418c0e12bad371c4adbfaec0dd1cb34b034ef37650ef205f92ad6199",
+      {
+        input: {
+          part: "upper_body", // 👉 change dynamically later
+          image: userBase64,
+          garment: clothBase64,
+        },
       },
-    });
+    );
 
-    const chunks: Uint8Array[] = [];
+    //  Handle output safely
+    const fileOutput = Array.isArray(output) ? output[0] : output;
 
-    for await (const chunk of stream as AsyncIterable<Uint8Array>) {
-      chunks.push(chunk);
+    if (!fileOutput) {
+      throw new Error("No output returned from flux-vton");
     }
 
-    if (chunks.length === 0) {
-      throw new Error("No data received from Replicate");
+    //  Convert to base64 image
+    const blob = await fileOutput.blob();
+    const arrayBuffer = await blob.arrayBuffer();
+    const imageBuffer = Buffer.from(arrayBuffer);
+
+    const imageBase64 = `data:image/png;base64,${imageBuffer.toString(
+      "base64",
+    )}`;
+
+    console.log("Image generated successfully (flux-vton)");
+
+    //  Gemini suggestions (optional, non-blocking)
+    let suggestions = "";
+
+    try {
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.5-flash",
+      });
+
+      const result = await model.generateContent([
+        {
+          inlineData: {
+            data: clothBuffer.toString("base64"),
+            mimeType: clothPhoto.type,
+          },
+        },
+        TRYON_SUGGESTION_PROMPT,
+      ]);
+
+      suggestions = result.response.text();
+    } catch (geminiError) {
+      console.warn("Gemini suggestions failed:", geminiError);
+      suggestions = "Style suggestions unavailable right now.";
     }
 
-    const fullBuffer = Buffer.concat(chunks);
-
-    const imageBase64 = `data:image/png;base64,${fullBuffer.toString("base64")}`;
-
-    console.log("✅ Image generated successfully");
-
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
-    });
-
-    const result = await model.generateContent(TRYON_SUGGESTION_PROMPT);
-
-    const suggestions = result.response.text();
-
+    //  Final response
     return NextResponse.json({
       success: true,
       image: imageBase64,
       suggestions,
-      message: "Your outfit is ready ",
+      message: "Your outfit is ready! ✨",
     });
   } catch (error: unknown) {
-    console.error(" Try-on API Error:", error);
+    console.error("Try-on API Error:", error);
 
     const message =
       error instanceof Error ? error.message : "Internal server error";
