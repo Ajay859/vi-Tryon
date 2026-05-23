@@ -2,7 +2,7 @@ import React from 'react'
 
 const SecondPage = () => {
   return (
-           <section className="border-t border-[#e4dfd4] bg-white px-6 py-16 text-center">
+           <section className="min-h-screen border-t border-[#e4dfd4] bg-white px-6 py-16 text-center">
         <h2
           className="mb-4 text-[30px] font-bold text-[#1c1c1c]"
           style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
