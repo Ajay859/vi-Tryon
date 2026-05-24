@@ -1,20 +1,23 @@
-import React from 'react'
+import React from "react";
 
 const SecondPage = () => {
   return (
-           <section className="min-h-screen border-t border-[#e4dfd4] bg-white px-6 py-16 text-center">
+    <section className="relative min-h-screen w-full bg-[#2d3554] flex flex-col items-center pt-20 pb-10">
+      {/* The image lands here visually via the scroll animation above */}
+      <div className="mt-12">
         <h2
-          className="mb-4 text-[30px] font-bold text-[#1c1c1c]"
-          style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+          className="text-center text-2xl font-bold text-white mb-3"
+          style={{ fontFamily: "'Arial Black', 'Helvetica Neue', sans-serif" }}
         >
           What is Virtual Try-On Studio?
         </h2>
-        <p className="mx-auto max-w-[500px] text-[14px] leading-[1.75] text-[#8a8a8a]">
+        <p className="text-center text-sm text-[#aaa] max-w-sm mx-auto leading-relaxed">
           Experience immersive AI-powered fashion previews with cinematic
           virtual try-on technology and modern interactive storytelling.
         </p>
-        </section> 
-  )
-}
+      </div>
+    </section>
+  );
+};
 
-export default SecondPage
+export default SecondPage;

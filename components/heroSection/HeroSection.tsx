@@ -1,89 +1,107 @@
 "use client";
-
-
 import Image from "next/image";
-import SecondPage from "./SecondPage";
+import { Montserrat } from "next/font/google";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
+import { useRef } from "react";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import MagneticButton from "../MagneticButtons/MagneticButton";
+gsap.registerPlugin(ScrollTrigger);
+
+const montserrat = Montserrat({
+  subsets: ["latin"],
+  weight: ["200"],
+});
 
 export default function HeroSection() {
+  const textRef = useRef(null);
+  const containerRef = useRef(null);
+  const imageRef = useRef(null);
 
+  useGSAP(() => {
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: containerRef.current,
+        scrub: true,
+        // markers: true,
+        start: "top top",
+        end: "bottom top",
+      },
+    });
+    tl.to(
+      textRef.current,
+      {
+        y: -250,
+        opacity: "-0.9",
+        ease: "none",
+      },
+      "a",
+    )
+      .to(
+        imageRef.current,
+        {
+          x: "-700",
+          ease: "none",
+        },
+        "a",
+      )
+      .to(
+        imageRef.current,
+        {
+          y: "1000",
+          ease: "none",
+        },
+        "a",
+      );
+  });
 
   return (
-    <div
-    style={{ fontFamily: "'DM Sans', 'Inter', sans-serif" }}
-    className="flex flex-col bg-[#ede9e0] overflow-hidden"
+    <section
+      ref={containerRef}
+      className="relative h-screen w-full"
+      style={{ backgroundColor: "#e8e6e2" }}
     >
-      {/* ─── HERO ─── */}
-      <section className="relative flex min-h-screen items-stretch">
+      {/* ── Centered model image ── */}
+      <div className="absolute inset-0 flex items-end justify-center z-50">
+        <Image
+          ref={imageRef}
+          src="/images/3.png"
+          alt="Model wearing Dolenga Wear"
+          width={600}
+          height={680}
+          className="object-contain object-bottom  translate-y-18 h-[103%] 
+     drop-shadow-2xl "
+          priority
+        />
+      </div>
 
-        <div className="absolute inset-y-0 right-0 lg:w-[34%] w-[50%] bg-[#7a9472]" />
+      {/* ── Bottom-left text block ── */}
+      <div
+        ref={textRef}
+        className="absolute  top-1/2 -translate-y-5 translate-x-19  left-10 z-10"
+      >
+        <h1
+          className={`
+        ${montserrat.className}
 
-        {/* LEFT COLUMN */}
-        <div className="relative ml-5 z-10 flex flex-1 items-center px-14 py-20 lg:px-20">
-          <div className="max-w-[480px]">
-
-            <p
-              className="mb-6 text-[11px] uppercase tracking-[0.25em] text-[#999]"
-            >
-              AI Fashion Experience
-            </p>
-
-            <h1
-              className="mb-7  text-[clamp(48px,5.5vw,72px)] font-bold leading-[0.93] text-[#1c1c1c]"
-              style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
-            >
-              Virtual
-              <br  />
-              Try-On
-              <br />
-              Studio
-            </h1>
-
-            {/* Body */}
-            <p className="mb-10 max-w-[390px] text-[15px] leading-[1.75] text-[#6b6b6b]">
-              Experience immersive AI-powered fashion previews with cinematic
-              virtual try-on technology and modern interactive storytelling.
-            </p>
-
-            <div className="flex flex-wrap gap-3">
-              <button
-                className="rounded-[5px] bg-[#6f8c6a] px-7 py-[13px] text-[13px] font-medium uppercase tracking-wider text-white transition-opacity hover:opacity-90"
-              >
-                Try Now
-              </button>
-              <button
-                className="rounded-[5px] border-[1.5px] border-[#1c1c1c] px-7 py-[13px] text-[13px] font-medium uppercase tracking-wider text-[#1c1c1c] transition hover:bg-[#1c1c1c] hover:text-white"
-              >
-                Explore
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="relative z-10 flex w-[32%] shrink-0 mt-20 mr-75 items-center justify-center py-12">
-          <div
-            className="relative overflow-hidden"
-            style={{
-              width: "clamp(260px, 35vw, 400px)",
-              height: "clamp(320px, 35vw, 1000px)",
-              borderRadius: "50% 50% 0 0 / 30% 30% 0 0",
-            }}
-          >
-            <Image
-              src="/images/5.png"
-              alt="Fashion Model"
-              fill
-              className="object-cover object-top"
-              priority
-            />
-          </div>
-        </div>
-        
-      </section>
-      
-
-      {/*second page */}
-      <SecondPage/>
-
-    </div>
+        text-9xl
+        font-black
+        uppercase
+        leading-[0.99]
+      `}
+        >
+          <span className="block  translate-x-29">fashion</span>
+          WEAR
+        </h1>
+        <p className="mt-4 max-w-55 text-[19px] leading-snug text-[#555]">
+          Choose best outfits with
+          <br />
+          <span className="flex gap-[5px]">
+            your personal
+            <MagneticButton>AI Assistant</MagneticButton>
+          </span>
+        </p>
+      </div>
+    </section>
   );
 }
