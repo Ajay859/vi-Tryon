@@ -1,6 +1,7 @@
 "use client";
 import Image from "next/image";
 import { Montserrat } from "next/font/google";
+import { Cormorant_Garamond } from "next/font/google";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { useRef } from "react";
@@ -13,6 +14,11 @@ const montserrat = Montserrat({
   weight: ["200"],
 });
 
+const cormorant = Cormorant_Garamond({
+  subsets: ["latin"],
+  weight: ["600"],
+});
+
 export default function HeroSection() {
   const textRef = useRef(null);
   const containerRef = useRef(null);
@@ -23,7 +29,8 @@ export default function HeroSection() {
       scrollTrigger: {
         trigger: containerRef.current,
         scrub: true,
-        // markers: true,
+        markers: true,
+        // pin: true,
         start: "top top",
         end: "bottom top",
       },
@@ -32,27 +39,21 @@ export default function HeroSection() {
       textRef.current,
       {
         y: -250,
-        opacity: "-0.9",
+        opacity: 0,
+        ease: "none",
+        duration: 2,
+      },
+      0,
+    ).to(
+      imageRef.current,
+      {
+        x: "-26vw",
+        y: "100vh",
+        duration: 3,
         ease: "none",
       },
-      "a",
-    )
-      .to(
-        imageRef.current,
-        {
-          x: "-700",
-          ease: "none",
-        },
-        "a",
-      )
-      .to(
-        imageRef.current,
-        {
-          y: "1000",
-          ease: "none",
-        },
-        "a",
-      );
+      0,
+    );
   });
 
   return (
@@ -62,15 +63,15 @@ export default function HeroSection() {
       style={{ backgroundColor: "#e8e6e2" }}
     >
       {/* ── Centered model image ── */}
-      <div className="absolute inset-0 flex items-end justify-center z-50">
+      <div className="absolute inset-0 flex items-end justify-center z-3 ">
         <Image
           ref={imageRef}
           src="/images/3.png"
           alt="Model wearing Dolenga Wear"
           width={600}
           height={680}
-          className="object-contain object-bottom  translate-y-18 h-[103%] 
-     drop-shadow-2xl "
+          className="object-contain object-bottom  translate-y-18 h-[90vh] 
+     drop-shadow-2xl w-auto "
           priority
         />
       </div>
@@ -78,25 +79,27 @@ export default function HeroSection() {
       {/* ── Bottom-left text block ── */}
       <div
         ref={textRef}
-        className="absolute  top-1/2 -translate-y-5 translate-x-19  left-10 z-10"
+        className="absolute  top-1/2 -translate-y-5 translate-x-19  left-10 z-4"
       >
         <h1
           className={`
         ${montserrat.className}
-
-        text-9xl
+        text-[clamp(48px,8vw,120px)]
+        
         font-black
         uppercase
         leading-[0.99]
       `}
         >
-          <span className="block  translate-x-29">fashion</span>
+          <span className="block   translate-x-29">fashion</span>
           WEAR
         </h1>
-        <p className="mt-4 max-w-55 text-[19px] leading-snug text-[#555]">
+        <p
+          className={` ${cormorant.className} tracking-wide italic mt-4 max-w-55 text-[clamp(20px,2vw,13px)] leading-snug text-[#555]`}
+        >
           Choose best outfits with
           <br />
-          <span className="flex gap-[5px]">
+          <span className="flex gap-1.25">
             your personal
             <MagneticButton>AI Assistant</MagneticButton>
           </span>
